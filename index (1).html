@@ -1,0 +1,154 @@
+<div id="zuzahlungsrechner-container">
+    <style>
+        #zuzahlungsrechner-container {
+            font-family: Arial, sans-serif;
+            margin: 20px auto;
+            max-width: 600px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        #zuzahlungsrechner-container h1 {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        #zuzahlungsrechner-container label {
+            font-size: 0.9rem;
+            color: #555;
+            margin-bottom: 5px;
+            display: block;
+        }
+        #zuzahlungsrechner-container input,
+        #zuzahlungsrechner-container select,
+        #zuzahlungsrechner-container button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        #zuzahlungsrechner-container button {
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        #zuzahlungsrechner-container button:hover {
+            background-color: #0056b3;
+        }
+        #zuzahlungsrechner-container .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9f7ef;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            color: #155724;
+        }
+        #zuzahlungsrechner-container .result p {
+            margin: 5px 0;
+        }
+    </style>
+    <h1>Zuzahlungsrechner</h1>
+    <label for="income">Monatliches Bruttoeinkommen (in Euro):</label>
+    <input type="number" id="income" placeholder="z. B. 3000" />
+
+    <label for="familyStatus">Familienstand:</label>
+    <select id="familyStatus">
+        <option value="alleinstehend">Alleinstehend</option>
+        <option value="verheiratet">Verheiratet</option>
+    </select>
+
+    <label for="children">Anzahl der Kinder:</label>
+    <input type="number" id="children" placeholder="z. B. 2" />
+
+    <label for="payments">Bisherige Zuzahlungen (in Euro):</label>
+    <input type="number" id="payments" placeholder="z. B. 100" />
+
+    <label for="year">Jahr:</label>
+    <select id="year">
+        <!-- Jahre werden dynamisch hinzugefügt -->
+    </select>
+
+    <button onclick="calculateZuzahlungen()">Berechnen</button>
+
+    <div class="result" id="zuzahlungResult" style="display: none;">
+        Ergebnisse werden hier angezeigt.
+    </div>
+
+    <script>
+        const allowances = {
+            "2025": { single: 6500, married: 13000, child: 3700 },
+            "2026": { single: 6650, married: 13300, child: 3750 },
+            // Weitere zukünftige Jahre können hier ergänzt werden.
+        };
+
+        function populateYearOptions() {
+            const yearSelect = document.getElementById("year");
+            const currentYear = new Date().getFullYear();
+            const currentMonth = new Date().getMonth() + 1; // Monat von 0-11
+
+            // Startjahr ist immer 2025 oder später
+            const baseYear = 2025;
+
+            // Füge nur das Basisjahr hinzu
+            const option1 = document.createElement("option");
+            option1.value = baseYear.toString();
+            option1.textContent = baseYear;
+            yearSelect.appendChild(option1);
+
+            // Füge das nächste Jahr hinzu, wenn der Monat September oder später ist
+            if (currentYear >= baseYear && currentMonth >= 9) {
+                const option2 = document.createElement("option");
+                option2.value = (baseYear + 1).toString();
+                option2.textContent = baseYear + 1;
+                yearSelect.appendChild(option2);
+            }
+        }
+
+        function calculateZuzahlungen() {
+            const income = parseFloat(document.getElementById("income").value);
+            const familyStatus = document.getElementById("familyStatus").value;
+            const children = parseInt(document.getElementById("children").value);
+            const payments = parseFloat(document.getElementById("payments").value);
+            const year = document.getElementById("year").value;
+
+            // Holen der Freibeträge für das gewählte Jahr
+            const yearData = allowances[year];
+            if (!yearData) {
+                alert("Freibeträge für das gewählte Jahr sind nicht verfügbar.");
+                return;
+            }
+
+            let allowance = familyStatus === "verheiratet" ? yearData.married : yearData.single;
+            allowance += children * yearData.child;
+
+            // Berechnung der Belastungsgrenze
+            const annualIncome = income * 12;
+            const taxableIncome = Math.max(annualIncome - allowance, 0);
+            const burdenLimit = taxableIncome * 0.02;
+
+            // Verbleibende Zuzahlungen
+            const remainingPayments = Math.max(burdenLimit - payments, 0);
+
+            // Ergebnisse anzeigen
+            const resultDiv = document.getElementById("zuzahlungResult");
+            resultDiv.style.display = "block";
+            resultDiv.innerHTML = `
+                <p><strong>Jahr: ${year}</strong></p>
+                <p>Ihre individuelle Belastungsgrenze: <strong>${burdenLimit.toFixed(2)} Euro</strong></p>
+                ${remainingPayments === 0 
+                    ? "<p>Sie haben die Belastungsgrenze erreicht. Keine weiteren Zuzahlungen erforderlich.</p>"
+                    : `<p>Verbleibende Zuzahlungen bis zur Belastungsgrenze: <strong>${remainingPayments.toFixed(2)} Euro</strong></p>`}
+            `;
+        }
+
+        // Fülle die Jahr-Auswahl, wenn die Seite geladen wird
+        document.addEventListener("DOMContentLoaded", populateYearOptions);
+    </script>
+</div>
